@@ -1,6 +1,6 @@
-# --- FINAL SCRIPT (SERVER-FRIENDLY INSTALLATION) ---
+# --- FINAL SCRIPT (Dependencies handled by requirements.txt) ---
 import sys, os, subprocess, math, collections
-
+import numpy as np, cv2, mediapipe as mp
 # This block now installs the latest compatible versions of the libraries
 try:
     import numpy as np
@@ -94,3 +94,4 @@ def analyze_video(video_path, output_video_path):
 if __name__ == "__main__":
     if len(sys.argv) < 2: sys.exit(1)
     analyze_video(sys.argv[1], "skeleton_video_final.mp4")
+
