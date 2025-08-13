@@ -1,17 +1,16 @@
-# --- FINAL SCRIPT (ROBUST INSTALLATION) ---
+# --- FINAL SCRIPT (SERVER-FRIENDLY INSTALLATION) ---
 import sys, os, subprocess, math, collections
 
-# <<< FIX: This block now forces specific, known-compatible versions >>>
+# This block now installs the latest compatible versions of the libraries
 try:
     import numpy as np
     import cv2
     import mediapipe as mp
     print("[Analyzer] Dependencies already satisfied.")
 except ImportError:
-    print("[Analyzer] Dependencies not found. Installing specific versions...")
+    print("[Analyzer] Dependencies not found. Installing...")
     try:
-        # We explicitly install exact versions known to be stable
-        subprocess.run([sys.executable, '-m', 'pip', 'install', 'numpy==1.26.4', 'opencv-python-headless==4.8.1.78', 'mediapipe==0.10.11'], check=True)
+        subprocess.run([sys.executable, '-m', 'pip', 'install', 'numpy', 'opencv-python-headless', 'mediapipe'], check=True)
         import numpy as np
         import cv2
         import mediapipe as mp
