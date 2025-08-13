@@ -1,19 +1,29 @@
-# --- FINAL CAPSTONE SCRIPT (Temporal Context & 2D-Robust Logic) ---
+# --- FINAL SCRIPT (SELF-INSTALLING & ISOLATED) ---
 import sys, os, subprocess, math, collections
 
+# <<< NEW: This block ensures all dependencies are installed when the script runs >>>
 try:
-    print("[Analyzer] Installing dependencies...")
-    subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet', 'numpy==1.26.4', 'opencv-python==4.8.1.78', 'mediapipe==0.10.11'], check=True)
-except subprocess.CalledProcessError as e:
-    print(f"[Analyzer] Error installing dependencies: {e}"); sys.exit(1)
+    import numpy as np
+    import cv2
+    import mediapipe as mp
+    print("[Analyzer] Dependencies already satisfied.")
+except ImportError:
+    print("[Analyzer] Dependencies not found. Installing...")
+    try:
+        subprocess.run([sys.executable, '-m', 'pip', 'install', 'numpy', 'opencv-python-headless', 'mediapipe'], check=True)
+        import numpy as np
+        import cv2
+        import mediapipe as mp
+        print("[Analyzer] Dependencies installed successfully.")
+    except Exception as e:
+        print(f"[Analyzer] FATAL ERROR during dependency installation: {e}")
+        sys.exit(1)
 
-import numpy as np, cv2, mediapipe as mp
+# --- The rest of the script is unchanged ---
 
-# --- MediaPipe Pose Landmark Indices ---
+# Landmark indices and connection definitions
 L_SHOULDER, R_SHOULDER, L_ELBOW, R_ELBOW, L_WRIST, R_WRIST = 11, 12, 13, 14, 15, 16
 L_HIP, R_HIP, L_KNEE, R_KNEE, L_ANKLE, R_ANKLE = 23, 24, 25, 26, 27, 28
-
-# --- Define the skeleton structure ---
 LEFT_CONNECTIONS = [(L_SHOULDER, L_ELBOW), (L_ELBOW, L_WRIST), (L_HIP, L_KNEE), (L_KNEE, L_ANKLE)]
 RIGHT_CONNECTIONS = [(R_SHOULDER, R_ELBOW), (R_ELBOW, R_WRIST), (R_HIP, R_KNEE), (R_KNEE, R_ANKLE)]
 CENTER_CONNECTIONS = [(L_SHOULDER, R_SHOULDER), (L_HIP, R_HIP), (L_SHOULDER, R_HIP), (R_SHOULDER, L_HIP)]
@@ -21,31 +31,19 @@ CENTER_CONNECTIONS = [(L_SHOULDER, R_SHOULDER), (L_HIP, R_HIP), (L_SHOULDER, R_H
 def draw_polished_skeleton(landmarks, image):
     height, width, _ = image.shape
     landmarks_np = np.array(landmarks)
-    
-    color_left = (255, 100, 0)  # Blue
-    color_right = (0, 100, 255) # Red
-    color_center = (200, 200, 200) # White
-    
-    connection_groups = [
-        (LEFT_CONNECTIONS, color_left),
-        (RIGHT_CONNECTIONS, color_right),
-        (CENTER_CONNECTIONS, color_center)
-    ]
-
+    color_left = (255, 100, 0); color_right = (0, 100, 255); color_center = (200, 200, 200)
+    connection_groups = [(LEFT_CONNECTIONS, color_left), (RIGHT_CONNECTIONS, color_right), (CENTER_CONNECTIONS, color_center)]
     for connections, color in connection_groups:
         for connection in connections:
             start_idx, end_idx = connection
             start_z = landmarks_np[start_idx][2]
-            brightness = max(0.3, 1 - (start_z + 0.5))
-            thickness = int(max(1, 4 * brightness))
+            brightness = max(0.3, 1 - (start_z + 0.5)); thickness = int(max(1, 4 * brightness))
             dynamic_color = tuple(int(c * brightness) for c in color)
             start_pos = (int(landmarks_np[start_idx][0] * width), int(landmarks_np[start_idx][1] * height))
             end_pos = (int(landmarks_np[end_idx][0] * width), int(landmarks_np[end_idx][1] * height))
             cv2.line(image, start_pos, end_pos, dynamic_color, thickness)
-
     for i, landmark in enumerate(landmarks_np):
-        pos = (int(landmark[0] * width), int(landmark[1] * height))
-        radius = 3 if i < 11 else 4
+        pos = (int(landmark[0] * width), int(landmark[1] * height)); radius = 3 if i < 11 else 4
         joint_color = color_center
         if i in [11,13,15,17,19,21,23,25,27,29,31]: joint_color = color_left
         elif i in [12,14,16,18,20,22,24,26,28,30,32]: joint_color = color_right
