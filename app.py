@@ -1,4 +1,4 @@
-# Save this code as app.py (Version 3.1 - Corrected Syntax)
+# Save this code as app.py (FINAL DEBUGGER VERSION)
 import streamlit as st
 import subprocess
 import os
@@ -50,11 +50,8 @@ st.markdown("""
 # --- Sidebar ---
 with st.sidebar:
     st.title("Controls")
-    
     st.header("1. Tuning")
-    # <<< FIX: Added the missing closing parenthesis to the st.slider() function >>>
     sensitivity = st.slider("Movement Sensitivity (Coming Soon)", min_value=1, max_value=100, value=50, help="This will control the level of detail in the analysis.")
-
     st.header("2. How to Use")
     st.info(
         "**For best results:**\n"
@@ -74,30 +71,33 @@ uploaded_file = st.file_uploader("Upload a video to begin analysis", type=["mp4"
 
 # --- Main Logic ---
 if uploaded_file is not None:
-    
     left_col, mid_col, right_col = st.columns([1,2,1])
     with mid_col:
         st.subheader("Original Video")
         st.video(uploaded_file)
     
     if st.button("Generate Skeleton Video", use_container_width=True):
-        
         with open("temp_video.mp4", "wb") as f:
             f.write(uploaded_file.getbuffer())
 
         with st.spinner("Analyzing motion... This may take a minute."):
-            subprocess.run(["python", "motion_analyzer.py", "temp_video.mp4"])
+            # <<< MODIFIED: This now captures standard error output >>>
+            result = subprocess.run(
+                ["python", "motion_analyzer.py", "temp_video.mp4"],
+                capture_output=True,
+                text=True
+            )
 
         output_video_path = "skeleton_video_final.mp4"
         
         if os.path.exists(output_video_path):
+            # If the file exists, the script was successful
+            st.success("Analysis Complete!")
             with open(output_video_path, "rb") as video_file:
                 video_bytes = video_file.read()
-                
                 with mid_col:
                     st.subheader("Generated Skeleton")
                     st.video(video_bytes)
-                    
                     st.download_button(
                         label="Download Skeleton Video (.mp4)",
                         data=video_bytes,
@@ -105,9 +105,12 @@ if uploaded_file is not None:
                         mime="video/mp4",
                         use_container_width=True
                     )
-            st.success("Analysis Complete!")
         else:
+            # <<< NEW: If the file doesn't exist, display the captured error message >>>
             st.error("Processing failed. The skeleton video could not be created.")
+            st.subheader("Error Log:")
+            # The error message from the script will be in result.stderr
+            st.code(result.stderr, language="bash")
             
         if os.path.exists("temp_video.mp4"):
             os.remove("temp_video.mp4")
