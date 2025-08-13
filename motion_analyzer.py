@@ -1,16 +1,17 @@
-# --- FINAL SCRIPT (SELF-INSTALLING & ISOLATED) ---
+# --- FINAL SCRIPT (SPECIFIC PYTHON VERSION) ---
 import sys, os, subprocess, math, collections
 
-# <<< NEW: This block ensures all dependencies are installed when the script runs >>>
+# <<< NEW: This block now specifies a compatible Python version for installation >>>
 try:
     import numpy as np
     import cv2
     import mediapipe as mp
     print("[Analyzer] Dependencies already satisfied.")
 except ImportError:
-    print("[Analyzer] Dependencies not found. Installing...")
+    print("[Analyzer] Dependencies not found. Installing with python3.9...")
     try:
-        subprocess.run([sys.executable, '-m', 'pip', 'install', 'numpy', 'opencv-python-headless', 'mediapipe'], check=True)
+        # We explicitly call python3.9 to ensure compatibility
+        subprocess.run(["python3.9", '-m', 'pip', 'install', 'numpy', 'opencv-python-headless', 'mediapipe'], check=True)
         import numpy as np
         import cv2
         import mediapipe as mp
