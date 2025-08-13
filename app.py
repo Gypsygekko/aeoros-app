@@ -1,4 +1,4 @@
-# Save this code as app.py (Version 3 - Custom Branded UI)
+# Save this code as app.py (Version 3.1 - Corrected Syntax)
 import streamlit as st
 import subprocess
 import os
@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- <<< NEW: Custom CSS for Branding and Layout >>> ---
+# --- Custom CSS for Branding and Layout ---
 st.markdown("""
 <style>
     /* Main background and text color */
@@ -49,9 +49,65 @@ st.markdown("""
 
 # --- Sidebar ---
 with st.sidebar:
-    # You can create a logo and upload it to your GitHub repo
-    # st.image("logo.png", width=100) 
     st.title("Controls")
     
     st.header("1. Tuning")
-    sensitivity = st.slider("Movement Sensitivity (Coming Soon)", 1, 100, 5
+    # <<< FIX: Added the missing closing parenthesis to the st.slider() function >>>
+    sensitivity = st.slider("Movement Sensitivity (Coming Soon)", min_value=1, max_value=100, value=50, help="This will control the level of detail in the analysis.")
+
+    st.header("2. How to Use")
+    st.info(
+        "**For best results:**\n"
+        "1.  Use a clear, well-lit video.\n"
+        "2.  Ensure the subject's full body is visible.\n"
+        "3.  Avoid baggy clothing that hides the body's form.\n"
+        "4.  Fast, blurry motion may reduce accuracy."
+    )
+
+# --- Main Page ---
+st.title("Aeoros")
+st.markdown("### *See the unseen. Control the uncreated.*")
+st.write("---")
+
+# --- File Uploader ---
+uploaded_file = st.file_uploader("Upload a video to begin analysis", type=["mp4"])
+
+# --- Main Logic ---
+if uploaded_file is not None:
+    
+    left_col, mid_col, right_col = st.columns([1,2,1])
+    with mid_col:
+        st.subheader("Original Video")
+        st.video(uploaded_file)
+    
+    if st.button("Generate Skeleton Video", use_container_width=True):
+        
+        with open("temp_video.mp4", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        with st.spinner("Analyzing motion... This may take a minute."):
+            subprocess.run(["python", "motion_analyzer.py", "temp_video.mp4"])
+
+        output_video_path = "skeleton_video_final.mp4"
+        
+        if os.path.exists(output_video_path):
+            with open(output_video_path, "rb") as video_file:
+                video_bytes = video_file.read()
+                
+                with mid_col:
+                    st.subheader("Generated Skeleton")
+                    st.video(video_bytes)
+                    
+                    st.download_button(
+                        label="Download Skeleton Video (.mp4)",
+                        data=video_bytes,
+                        file_name="aeoros_skeleton_output.mp4",
+                        mime="video/mp4",
+                        use_container_width=True
+                    )
+            st.success("Analysis Complete!")
+        else:
+            st.error("Processing failed. The skeleton video could not be created.")
+            
+        if os.path.exists("temp_video.mp4"):
+            os.remove("temp_video.mp4")
