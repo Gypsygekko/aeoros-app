@@ -1,17 +1,17 @@
-# --- FINAL SCRIPT (SPECIFIC PYTHON VERSION) ---
+# --- FINAL SCRIPT (ROBUST INSTALLATION) ---
 import sys, os, subprocess, math, collections
 
-# <<< NEW: This block now specifies a compatible Python version for installation >>>
+# <<< FIX: This block now forces specific, known-compatible versions >>>
 try:
     import numpy as np
     import cv2
     import mediapipe as mp
     print("[Analyzer] Dependencies already satisfied.")
 except ImportError:
-    print("[Analyzer] Dependencies not found. Installing with python3.9...")
+    print("[Analyzer] Dependencies not found. Installing specific versions...")
     try:
-        # We explicitly call python3.9 to ensure compatibility
-        subprocess.run([sys.executable, '-m', 'pip', 'install', 'numpy', 'opencv-python-headless', 'mediapipe'], check=True)
+        # We explicitly install exact versions known to be stable
+        subprocess.run([sys.executable, '-m', 'pip', 'install', 'numpy==1.26.4', 'opencv-python-headless==4.8.1.78', 'mediapipe==0.10.11'], check=True)
         import numpy as np
         import cv2
         import mediapipe as mp
@@ -95,4 +95,3 @@ def analyze_video(video_path, output_video_path):
 if __name__ == "__main__":
     if len(sys.argv) < 2: sys.exit(1)
     analyze_video(sys.argv[1], "skeleton_video_final.mp4")
-
