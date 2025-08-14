@@ -1,40 +1,31 @@
-# motion_analyzer.py with heartbeat prints
-import sys, os, subprocess, collections
-# ... (rest of the script is the same, this is just to show where to add the prints) ...
+# --- FINAL SCRIPT (TWO-STAGE ROCKET INSTALLER) ---
+import sys
+import os
+import subprocess
 
-def analyze_video(video_path, output_video_path):
-    print("[ANALYZER HEARTBEAT] Script started. Inside analyze_video function.") # <<< DEBUG PRINT
-    # Load the YOLOv8-Pose model
-    print("[ANALYZER HEARTBEAT] Loading YOLO model...") # <<< DEBUG PRINT
-    model = YOLO('yolov8n-pose.pt')
-    print("[ANALYZER HEARTBEAT] YOLO model loaded.") # <<< DEBUG PRINT
-    
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        print("[ANALYZER HEARTBEAT] FATAL: Could not open video file.")
-        raise ValueError("Cannot open video file")
-# --- FINAL SCRIPT (SELF-INSTALLING YOLOv8 ENGINE) ---
-import sys, os, subprocess, collections
-
-# This block ensures all dependencies are installed when the script runs
+# --- STAGE 1: Dependency Check & Installation ---
 try:
     import cv2
     import numpy as np
     from ultralytics import YOLO
-    print("[Analyzer] Dependencies already satisfied.")
+    import collections
+    print("[Analyzer] Dependencies are already satisfied.")
+
 except ImportError:
-    print("[Analyzer] Dependencies not found. Installing ultralytics and opencv-python...")
+    print("[Analyzer] Dependencies not found. Installing now...")
     try:
+        # Install dependencies
         subprocess.run([sys.executable, '-m', 'pip', 'install', 'ultralytics', 'opencv-python-headless'], check=True)
-        import cv2
-        import numpy as np
-        from ultralytics import YOLO
-        print("[Analyzer] Dependencies installed successfully.")
+        print("[Analyzer] Dependencies installed. Re-running the script...")
+        # <<< CRITICAL FIX: Exit and re-run the script to load new libraries >>>
+        os.execv(sys.executable, ['python'] + sys.argv)
     except Exception as e:
         print(f"[Analyzer] FATAL ERROR during dependency installation: {e}")
         sys.exit(1)
 
-# --- Landmark indices and connection definitions for YOLOv8-Pose ---
+# --- STAGE 2: Main Analysis (only runs after dependencies are confirmed) ---
+
+# Landmark indices and connection definitions
 L_SHOULDER, R_SHOULDER, L_ELBOW, R_ELBOW, L_WRIST, R_WRIST = 5, 6, 7, 8, 9, 10
 L_HIP, R_HIP, L_KNEE, R_KNEE, L_ANKLE, R_ANKLE = 11, 12, 13, 14, 15, 16
 LEFT_CONNECTIONS = [(L_SHOULDER, L_ELBOW), (L_ELBOW, L_WRIST), (L_HIP, L_KNEE), (L_KNEE, L_ANKLE)]
@@ -50,16 +41,15 @@ def draw_polished_skeleton(keypoints, image):
     for connections, color in connection_groups:
         for connection in connections:
             start_idx, end_idx = connection
-            # Check if keypoints are detected with sufficient confidence
             if landmarks_np[start_idx][2] > 0.1 and landmarks_np[end_idx][2] > 0.1:
                 start_pos = (int(landmarks_np[start_idx][0]), int(landmarks_np[start_idx][1]))
                 end_pos = (int(landmarks_np[end_idx][0]), int(landmarks_np[end_idx][1]))
                 cv2.line(image, start_pos, end_pos, color, 2)
             
     for i, landmark in enumerate(landmarks_np):
-        if landmark[2] > 0.1: # Only draw confident joints
+        if landmark[2] > 0.1:
             pos = (int(landmark[0]), int(landmark[1]))
-            cv2.circle(image, pos, 4, (0, 255, 0), -1) # Green joints
+            cv2.circle(image, pos, 4, (0, 255, 0), -1)
     return image
 
 def analyze_video(video_path, output_video_path):
@@ -85,7 +75,7 @@ def analyze_video(video_path, output_video_path):
         
         black_frame = np.zeros((frame_height, frame_width, 3), dtype=np.uint8)
         if results and hasattr(results[0], 'keypoints') and results[0].keypoints and len(results[0].keypoints.xy) > 0:
-            keypoints = results[0].keypoints.cpu().numpy()[0] # Get the first detected person's keypoints
+            keypoints = results[0].keypoints.cpu().numpy()[0]
             skeleton_frame = draw_polished_skeleton(keypoints, black_frame)
             video_writer.write(skeleton_frame)
         else:
@@ -99,4 +89,3 @@ def analyze_video(video_path, output_video_path):
 if __name__ == "__main__":
     if len(sys.argv) < 2: sys.exit(1)
     analyze_video(sys.argv[1], "skeleton_video_final.mp4")
-
