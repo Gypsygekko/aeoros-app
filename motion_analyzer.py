@@ -1,3 +1,18 @@
+# motion_analyzer.py with heartbeat prints
+import sys, os, subprocess, collections
+# ... (rest of the script is the same, this is just to show where to add the prints) ...
+
+def analyze_video(video_path, output_video_path):
+    print("[ANALYZER HEARTBEAT] Script started. Inside analyze_video function.") # <<< DEBUG PRINT
+    # Load the YOLOv8-Pose model
+    print("[ANALYZER HEARTBEAT] Loading YOLO model...") # <<< DEBUG PRINT
+    model = YOLO('yolov8n-pose.pt')
+    print("[ANALYZER HEARTBEAT] YOLO model loaded.") # <<< DEBUG PRINT
+    
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print("[ANALYZER HEARTBEAT] FATAL: Could not open video file.")
+        raise ValueError("Cannot open video file")
 # --- FINAL SCRIPT (SELF-INSTALLING YOLOv8 ENGINE) ---
 import sys, os, subprocess, collections
 
@@ -84,3 +99,4 @@ def analyze_video(video_path, output_video_path):
 if __name__ == "__main__":
     if len(sys.argv) < 2: sys.exit(1)
     analyze_video(sys.argv[1], "skeleton_video_final.mp4")
+
