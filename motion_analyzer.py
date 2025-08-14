@@ -1,31 +1,26 @@
-# --- FINAL SCRIPT (TWO-STAGE ROCKET INSTALLER) ---
-import sys
-import os
-import subprocess
+# --- FINAL SCRIPT (VERBOSE DEBUGGER for YOLOv8) ---
+import sys, os, subprocess, collections
 
-# --- STAGE 1: Dependency Check & Installation ---
+# This block ensures all dependencies are installed when the script runs
 try:
     import cv2
     import numpy as np
     from ultralytics import YOLO
-    import collections
-    print("[Analyzer] Dependencies are already satisfied.")
-
+    print("[Analyzer] Dependencies already satisfied.")
 except ImportError:
-    print("[Analyzer] Dependencies not found. Installing now...")
+    print("[Analyzer] Dependencies not found. Installing ultralytics and opencv-python...")
     try:
-        # Install dependencies
         subprocess.run([sys.executable, '-m', 'pip', 'install', 'ultralytics', 'opencv-python-headless'], check=True)
-        print("[Analyzer] Dependencies installed. Re-running the script...")
-        # <<< CRITICAL FIX: Exit and re-run the script to load new libraries >>>
-        os.execv(sys.executable, ['python'] + sys.argv)
+        import cv2
+        import numpy as np
+        from ultralytics import YOLO
+        print("[Analyzer] Dependencies installed successfully.")
     except Exception as e:
         print(f"[Analyzer] FATAL ERROR during dependency installation: {e}")
         sys.exit(1)
 
-# --- STAGE 2: Main Analysis (only runs after dependencies are confirmed) ---
+# --- The rest of the script is unchanged, except for the analyze_video function ---
 
-# Landmark indices and connection definitions
 L_SHOULDER, R_SHOULDER, L_ELBOW, R_ELBOW, L_WRIST, R_WRIST = 5, 6, 7, 8, 9, 10
 L_HIP, R_HIP, L_KNEE, R_KNEE, L_ANKLE, R_ANKLE = 11, 12, 13, 14, 15, 16
 LEFT_CONNECTIONS = [(L_SHOULDER, L_ELBOW), (L_ELBOW, L_WRIST), (L_HIP, L_KNEE), (L_KNEE, L_ANKLE)]
@@ -37,7 +32,6 @@ def draw_polished_skeleton(keypoints, image):
     landmarks_np = np.array(keypoints)
     color_left = (255, 100, 0); color_right = (0, 100, 255); color_center = (200, 200, 200)
     connection_groups = [(LEFT_CONNECTIONS, color_left), (RIGHT_CONNECTIONS, color_right), (CENTER_CONNECTIONS, color_center)]
-
     for connections, color in connection_groups:
         for connection in connections:
             start_idx, end_idx = connection
@@ -45,7 +39,6 @@ def draw_polished_skeleton(keypoints, image):
                 start_pos = (int(landmarks_np[start_idx][0]), int(landmarks_np[start_idx][1]))
                 end_pos = (int(landmarks_np[end_idx][0]), int(landmarks_np[end_idx][1]))
                 cv2.line(image, start_pos, end_pos, color, 2)
-            
     for i, landmark in enumerate(landmarks_np):
         if landmark[2] > 0.1:
             pos = (int(landmark[0]), int(landmark[1]))
@@ -71,14 +64,22 @@ def analyze_video(video_path, output_video_path):
         if not success: break
         frame_count += 1
         
-        results = model(frame, verbose=False)
+        # <<< MODIFIED: Run the model with verbose=True to see its output >>>
+        print(f"\n--- Analyzing Frame {frame_count} ---")
+        results = model(frame, verbose=True)
+        
+        # Print the contents of the results for the first 5 frames for debugging
+        if frame_count <= 5:
+            print(f"DEBUG: Results object for frame {frame_count}: {results[0].keypoints}")
         
         black_frame = np.zeros((frame_height, frame_width, 3), dtype=np.uint8)
-        if results and hasattr(results[0], 'keypoints') and results[0].keypoints and len(results[0].keypoints.xy) > 0:
-            keypoints = results[0].keypoints.cpu().numpy()[0]
+        # The condition to check for keypoints has been made more robust
+        if results and hasattr(results[0], 'keypoints') and results[0].keypoints is not None and results[0].keypoints.shape[1] > 0:
+            keypoints = results[0].keypoints.xy[0].cpu().numpy()
             skeleton_frame = draw_polished_skeleton(keypoints, black_frame)
             video_writer.write(skeleton_frame)
         else:
+            print(f"WARNING: No person detected in frame {frame_count}.")
             video_writer.write(black_frame)
             
     print(f"[Analyzer] Processed {frame_count} frames.")
